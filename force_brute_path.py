@@ -6,6 +6,8 @@ from optparse import OptionParser
 import urllib2
 import socket
 import socks
+import time
+import threadpool
 
 def set_socks5_proxy():
     '''
@@ -24,25 +26,38 @@ def set_http_proxy():
     opener = urllib2.build_opener(proxy_handler)
     urllib2.install_opener(opener)
 
-def audit(host,file,proxy):
+def audit(host,file,proxy,threads):
     if proxy=='socks5':
         set_socks5_proxy()
     elif proxy=='http':
         set_http_proxy()
+    else:
+        pass
     path_list=read_dict(file)
-    for path in path_list:
-        request = urllib2.Request(host+path)
-        request.add_header('User-Agent', 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)')
-        try:
-            response = urllib2.urlopen(request,timeout=10)
-            code=response.getcode()
-            if code==200:
-                print(host+path) #todo:write log,save the successful results
-        except urllib2.URLError,e:
-            # print '.'
-            pass
-        except socket.timeout,e:
-            print type(e)  #todo:try another proxy if the current proxy tunnel is timeout
+    url_list=[host+path for path in path_list]
+    thread_pool(url_list,threads)
+
+def open_url(url):
+    request = urllib2.Request(url)
+    request.add_header('User-Agent', 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)')
+    try:
+        response = urllib2.urlopen(request,timeout=10)
+        code=response.getcode()
+        if code==200:
+            return url#todo:write log,save the successful results
+    except urllib2.URLError,e:
+        return '404'
+    except socket.timeout,e:
+        return 'timeout' #todo:try another proxy if the current proxy tunnel is timeout
+
+def thread_pool(url_list,threads):
+    pool = threadpool.ThreadPool(threads)
+    reqs = threadpool.makeRequests(open_url,url_list,print_result)
+    [pool.putRequest(req) for req in reqs]
+    pool.wait()
+
+def print_result(request, result):
+    print "the code is %s %s" % (request.requestID, result)
 
 def read_dict(file):
     lines=[]
@@ -54,11 +69,13 @@ def read_dict(file):
 def main():
     options = OptionParser(usage='%prog url [options]', description='Test for path brute force attack')
     options.add_option('-d', '--dict', type='string', default='php.txt', help='dictionary of path for using')
-    options.add_option('-p', '--proxy', type='string', default='http', help='proxy type:http,socks5')
+    options.add_option('-p', '--proxy', type='string', default='none', help='proxy type:http,socks5')
+    options.add_option('-t', '--threads', type='int', default='4', help='set threads')
     opts, args = options.parse_args()
     if len(args) < 1:
         options.print_help()
         return
+
     audit(args[0],opts.dict,opts.proxy)
 
 
