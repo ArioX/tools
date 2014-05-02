@@ -40,15 +40,17 @@ def audit(host,file,proxy,threads):
 def open_url(url):
     request = urllib2.Request(url)
     request.add_header('User-Agent', 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)')
+    result=''
     try:
         response = urllib2.urlopen(request,timeout=10)
         code=response.getcode()
         if code==200:
-            return url#todo:write log,save the successful results
+            result=url#todo:write log,save the successful results
     except urllib2.URLError,e:
-        return '404'
+        result='404'
     except socket.timeout,e:
-        return 'timeout' #todo:try another proxy if the current proxy tunnel is timeout
+        result='timeout' #todo:try another proxy if the current proxy tunnel is timeout
+    return result
 
 def thread_pool(url_list,threads):
     pool = threadpool.ThreadPool(threads)
@@ -57,7 +59,7 @@ def thread_pool(url_list,threads):
     pool.wait()
 
 def print_result(request, result):
-    print "the code is %s %s" % (request.requestID, result)
+    print "Testing %s ... : %s" % (request.args, result)
 
 def read_dict(file):
     lines=[]
@@ -70,14 +72,16 @@ def main():
     options = OptionParser(usage='%prog url [options]', description='Test for path brute force attack')
     options.add_option('-d', '--dict', type='string', default='php.txt', help='dictionary of path for using')
     options.add_option('-p', '--proxy', type='string', default='none', help='proxy type:http,socks5')
-    options.add_option('-t', '--threads', type='int', default='4', help='set threads')
+    options.add_option('-t', '--threads', type='int', default='1000', help='set threads')
     opts, args = options.parse_args()
     if len(args) < 1:
         options.print_help()
         return
 
-    audit(args[0],opts.dict,opts.proxy)
-
+    audit(args[0],opts.dict,opts.proxy,opts.threads)
 
 if __name__ == '__main__':
+    start = time.clock()
     main()
+    elapsed = (time.clock() - start)
+    print("Time used:",elapsed)
