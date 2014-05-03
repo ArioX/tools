@@ -9,11 +9,12 @@ import socks
 import time
 import threadpool
 
+
 def set_socks5_proxy():
     '''
     set the socks5 proxy
     '''
-    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 1080) #todo: read from a proxy list file
+    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 1080)  #todo: read from a proxy list file
     socket.socket = socks.socksocket
 
 
@@ -21,52 +22,89 @@ def set_http_proxy():
     '''
     set the http proxy
     '''
-    proxy_addr='218.64.255.253:3128' #todo:read from a proxy list file
-    proxy_handler = urllib2.ProxyHandler({'http':proxy_addr})
+    proxy_addr = '218.64.255.253:3128'  #todo:read from a proxy list file
+    proxy_handler = urllib2.ProxyHandler({'http': proxy_addr})
     opener = urllib2.build_opener(proxy_handler)
     urllib2.install_opener(opener)
 
-def audit(host,file,proxy,threads):
-    if proxy=='socks5':
+
+def audit(host, file, proxy, threads):
+    if proxy == 'socks5':
         set_socks5_proxy()
-    elif proxy=='http':
+    elif proxy == 'http':
         set_http_proxy()
     else:
         pass
-    path_list=read_dict(file)
-    url_list=[host+path for path in path_list]
-    thread_pool(url_list,threads)
+    path_list = read_dict(file)
+    url_list = [host + path for path in path_list]
+    thread_pool(url_list, threads)
+
 
 def open_url(url):
     request = urllib2.Request(url)
     request.add_header('User-Agent', 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)')
-    result=''
+    result = ''
     try:
-        response = urllib2.urlopen(request,timeout=10)
-        code=response.getcode()
-        if code==200:
-            result=url#todo:write log,save the successful results
-    except urllib2.URLError,e:
-        result='404'
-    except socket.timeout,e:
-        result='timeout' #todo:try another proxy if the current proxy tunnel is timeout
-    return result
+        response = urllib2.urlopen(request, timeout=10)
+        code = response.getcode()
+        if code == 200:
+            result = code  #todo:write log,save the successful results
+    except urllib2.URLError, e:
+        result = '404'
+    except socket.timeout, e:
+        result = 'timeout'  #todo:try another proxy if the current proxy tunnel is timeout
+    except:
+        print 'Some error/exception occurred.\n'
+    finally:
+        return result
 
-def thread_pool(url_list,threads):
+
+def thread_pool(url_list, threads):
     pool = threadpool.ThreadPool(threads)
-    reqs = threadpool.makeRequests(open_url,url_list,print_result)
+    reqs = threadpool.makeRequests(open_url, url_list, print_result, exc_callback)
     [pool.putRequest(req) for req in reqs]
     pool.wait()
 
+
+def exc_callback(excinfo):
+    errorstr = ''.join(traceback.format_exception(*excinfo))
+    print errorstr
+
+
 def print_result(request, result):
     print "Testing %s ... : %s" % (request.args, result)
+    if result == 200:
+        logger('save', request.args)
+
 
 def read_dict(file):
-    lines=[]
-    with open(file, 'r') as f:
-        for line in f:
-            lines.append(line)
+    lines = []
+    try:
+        with open(file, 'r') as f:
+            for line in f:
+                lines.append(line.strip())
+    except IOError as err:
+        print("File Error:" + str(err))
     return lines
+
+
+def logger(args, string='', file='log.txt'):
+    try:
+        if args == 'init':
+            with open(file, 'w') as f:
+                f.write('Start Test.......\n')
+        elif args == 'result':
+            print "=============================="
+            print "show result........\n"
+            with open(file, 'r') as f:
+                print f.read()
+        elif args == 'save':
+            with open('log.txt', 'a+') as f:
+                f.write("%s ... successful\n" % string)
+    except IOError as err:
+        print("File Open Error:" + str(err))
+    return
+
 
 def main():
     options = OptionParser(usage='%prog url [options]', description='Test for path brute force attack')
@@ -77,11 +115,13 @@ def main():
     if len(args) < 1:
         options.print_help()
         return
+    logger('init')
+    audit(args[0], opts.dict, opts.proxy, opts.threads)
+    logger('result')
 
-    audit(args[0],opts.dict,opts.proxy,opts.threads)
 
 if __name__ == '__main__':
     start = time.clock()
     main()
     elapsed = (time.clock() - start)
-    print("Time used:",elapsed)
+    print("Time used:", elapsed)
