@@ -56,8 +56,8 @@ def check():
         error ="\n[!]You must install Shodan Module in here :\n[url]http://pypi.python.org/packages/source/s/shodan/...[/url]"
         tayping(error_module)
      except KeyboardInterrupt:
-    print "\n[*]Exiting program...\n"
-    sys.exit(1)
+        print "\n[*]Exiting program...\n"
+        sys.exit(1)
      else :
         succes="\n[*]Shodan module is available..."
         tayping(succes)
@@ -76,8 +76,8 @@ def check():
            tayping(succces)
            sleep(3)
      except KeyboardInterrupt:
-    print "\n[*] Exiting program...\n"
-    sys.exit(0)
+        print "\n[*] Exiting program...\n"
+        sys.exit(0)
     
             
           
@@ -113,64 +113,64 @@ Contach  : %s
  
  
 def expoitdb():
-        try:
-           searching_Exploit= raw_input('[+]Search a exploit :')
-           print '[!]You search [%s] Exploit'% searching_Exploit
-           wtf     = _lolz_.exploitdb.search(searching_Exploit)
-           more    = wtf['total']
-           print '[!]Found [%s] exploit with result [%s]'%(more,searching_Exploit)
-           try:
-              display =raw_input('[!]See all list exploit found?(y/n)')
-              if display =='y':
-                    ds = wtf['matches']
-                    for i in ds :
-                        print'%s: %s' % (i['id'],i['description'])
-           except Exception,err:
-                  print'[%s]'%err
- 
-           try:
-              display_exploit=raw_input('[+]Select type exploit?(y/n)')
-              if display_exploit =='y':
-                 print'choois types : remote, webapps, dos, local, shellcode ?'
-                 rock =raw_input('')
-                 print 'youre chooise [%s] exploits'%rock
-                 r = wtf['matches']
-                 for i in r:
-                     if rock ==i['type']:
-                           print'%s: %s' % (i['id'],i['description'])
-           except Exception,err:
-                   print'[%s]'%err
-           try:
-              view_exploit=raw_input('[+]Select exploit to view ?(y/n)')
-              if view_exploit =='y':
-                 print'[+]Enter exploit id to view :'
-                 v = raw_input('')
-                 lols=wtf['matches']
-                 for i in lols:
-                     if v == str(i['id']):
-                        File_exploit = _lolz_.exploitdb.download(i['id'])
-                        print 'Filename: %s'% File_exploit['filename']
-                        print 'Content-type: %s' % File_exploit['content-type']
-                        print File_exploit['data']
-                        download_exploit= raw_input('[+]download the exploit ?(y/n)')
-                        if download_exploit=='y':
-                           dwnload = open(File_exploit['filename'], 'w')
-                           dwnload.write(File_exploit['data'])
-                           dwnload.close()
-                           print'%s successfully download' % File_exploit['filename']
-           except Exception,err:
-                   print'[%s]'%err
-           try_again=raw_input('[+]Do you want to try again ?(y/n):')
-           while try_again=='y':
-              os.system(clear())
-              title()
-              expoitdb()
-              try_again=raw_input('[+]Do you want to try again ?(y/n):')
-           main()
-        except KeyboardInterrupt, IOError:
-                 print '\nYou pressed Ctrl+C or exited...'
-                 main()
-             sys.exit(1)
+    try:
+       searching_Exploit= raw_input('[+]Search a exploit :')
+       print '[!]You search [%s] Exploit'% searching_Exploit
+       wtf     = _lolz_.exploitdb.search(searching_Exploit)
+       more    = wtf['total']
+       print '[!]Found [%s] exploit with result [%s]'%(more,searching_Exploit)
+       try:
+          display =raw_input('[!]See all list exploit found?(y/n)')
+          if display =='y':
+                ds = wtf['matches']
+                for i in ds :
+                    print'%s: %s' % (i['id'],i['description'])
+       except Exception,err:
+              print'[%s]'%err
+
+       try:
+          display_exploit=raw_input('[+]Select type exploit?(y/n)')
+          if display_exploit =='y':
+             print'choois types : remote, webapps, dos, local, shellcode ?'
+             rock =raw_input('')
+             print 'youre chooise [%s] exploits'%rock
+             r = wtf['matches']
+             for i in r:
+                 if rock ==i['type']:
+                       print'%s: %s' % (i['id'],i['description'])
+       except Exception,err:
+               print'[%s]'%err
+       try:
+          view_exploit=raw_input('[+]Select exploit to view ?(y/n)')
+          if view_exploit =='y':
+             print'[+]Enter exploit id to view :'
+             v = raw_input('')
+             lols=wtf['matches']
+             for i in lols:
+                 if v == str(i['id']):
+                    File_exploit = _lolz_.exploitdb.download(i['id'])
+                    print 'Filename: %s'% File_exploit['filename']
+                    print 'Content-type: %s' % File_exploit['content-type']
+                    print File_exploit['data']
+                    download_exploit= raw_input('[+]download the exploit ?(y/n)')
+                    if download_exploit=='y':
+                       dwnload = open(File_exploit['filename'], 'w')
+                       dwnload.write(File_exploit['data'])
+                       dwnload.close()
+                       print'%s successfully download' % File_exploit['filename']
+       except Exception,err:
+               print'[%s]'%err
+       try_again=raw_input('[+]Do you want to try again ?(y/n):')
+       while try_again=='y':
+          os.system(clear())
+          title()
+          expoitdb()
+          try_again=raw_input('[+]Do you want to try again ?(y/n):')
+       main()
+    except KeyboardInterrupt, IOError:
+        print '\nYou pressed Ctrl+C or exited...'
+        main()
+        sys.exit(1)
  
 def metasploit():
         try:
@@ -232,33 +232,32 @@ def exit():
       sys.exit()
  
 def main():
-        try:
-           os.system(clear())
-           title()
-           menu = {'1':expoitdb, '2':metasploit, '3':host, '4':exit,}
-           while True:
-               print """
-Input your chooise:
-1) Search exploit
-2) Search Metasploit Modules
-3) Host lookup
-4) Exit
-"""
-               try:
-                  chooise = raw_input('Select you chooise: ')
-               except KeyboardInterrupt, IOError:
-                 print '\nYou pressed Ctrl+C or exited...'
-             sys.exit(1)
-               else:
-                  if chooise in menu.keys():
-                 menu[chooise]()
-                     os.system(clear())
-                     title()
-              else:
-                 print '\nInvalid selection'
- 
-        except Exception,err:
-              print'[%s]'%err
+    try:
+        os.system(clear())
+        title()
+        menu = {'1':expoitdb, '2':metasploit, '3':host, '4':exit,}
+        while True:
+                print """
+                    Input your chooise:
+                    1) Search exploit
+                    2) Search Metasploit Modules
+                    3) Host lookup
+                    4) Exit
+                    """
+                try:
+                    chooise = raw_input('Select you chooise: ')
+                except KeyboardInterrupt, IOError:
+                    print '\nYou pressed Ctrl+C or exited...'
+                    sys.exit(1)
+                else:
+                    if chooise in menu.keys():
+                        menu[chooise]()
+                        os.system(clear())
+                        title()
+                    else:
+                        print '\nInvalid selection'
+    except Exception,err:
+        print'[%s]'%err
  
 if __name__=='__main__':
      check()
