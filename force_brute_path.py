@@ -3,38 +3,83 @@
 #__author__ = 'Ario'
 
 from optparse import OptionParser
+import threadpool
+import traceback
 import urllib2
+import random
 import socket
 import socks
 import time
-import threadpool
+import sys
 
 
-def set_socks5_proxy():
-    '''
-    set the socks5 proxy
-    '''
-    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 1080)  #todo: read from a proxy list file
-    socket.socket = socks.socksocket
+class proxy:
+    def __init__(self, type, proxy_file):
+        self.type = type
+        self.proxy_file = proxy_file
+        self.proxy_addr_list = self.__read_dict()
+
+    def get_one_proxy(self, proxy_addr=''):
+        if proxy_addr != '':
+            try:
+                self.proxy_addr_list.remove(proxy_addr)
+            except:
+                print 'proxy used up,exiting...'
+                sys.exit(0)
+        self.proxy_addr = random.choice(self.proxy_addr_list)
+        return self.proxy_addr
+
+    def __read_dict(self):
+        lines = []
+        try:
+            with open(self.proxy_file, 'r') as f:
+                for line in f:
+                    lines.append(line.strip())
+        except IOError as err:
+            print("File Error:" + str(err))
+        return lines
 
 
-def set_http_proxy():
-    '''
-    set the http proxy
-    '''
-    proxy_addr = '218.64.255.253:3128'  #todo:read from a proxy list file
-    proxy_handler = urllib2.ProxyHandler({'http': proxy_addr})
-    opener = urllib2.build_opener(proxy_handler)
-    urllib2.install_opener(opener)
+class HttpProxy(proxy):
+    def __init__(self, type, proxy_file):
+        proxy.__init__(self, type, proxy_file)
+
+    def set_proxy(self, proxy_addr):
+        '''
+		set the http proxy
+		'''
+        self.proxy_addr = proxy_addr
+        proxy_handler = urllib2.ProxyHandler({'http': self.proxy_addr})
+        opener = urllib2.build_opener(proxy_handler)
+        urllib2.install_opener(opener)
 
 
-def audit(host, file, proxy, threads):
-    if proxy == 'socks5':
-        set_socks5_proxy()
-    elif proxy == 'http':
-        set_http_proxy()
-    else:
-        pass
+class Sock5Proxy(proxy):
+    def __init__(self, type, proxy_file):
+        proxy.__init__(self, type, proxy_file)
+
+    def set_proxy(self, proxy_addr):
+        '''
+		set the socks5 proxy
+		'''
+        self.proxy_addr = proxy_addr
+        socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, proxy_addr.split(':')[0], proxy_addr.split(':')[1])
+        socket.socket = socks.socksocket
+
+
+def set_my_proxy(proxy_type, proxy_list):
+    global proxy_addr, my_proxy
+    proxy_addr = ''
+    if proxy_type == 'http':
+        my_proxy = HttpProxy(proxy, proxy_list)
+    elif proxy_type == 'socks5':
+        my_proxy = Sock5Proxy(proxy, proxy_list)
+    proxy_addr = my_proxy.get_one_proxy(proxy_addr)
+    my_proxy.set_proxy(proxy_addr)
+
+
+def audit(host, file, proxy, threads, proxy_list):
+    set_my_proxy(proxy, proxy_list)
     path_list = read_dict(file)
     url_list = [host + path for path in path_list]
     thread_pool(url_list, threads)
@@ -48,11 +93,13 @@ def open_url(url):
         response = urllib2.urlopen(request, timeout=10)
         code = response.getcode()
         if code == 200:
-            result = code  #todo:write log,save the successful results
+            result = code
     except urllib2.URLError, e:
         result = '404'
     except socket.timeout, e:
-        result = 'timeout'  #todo:try another proxy if the current proxy tunnel is timeout
+        result = 'timeout'
+        proxy_addr = my_proxy.get_one_proxy(proxy_addr)
+        my_proxy.set_proxy(proxy_addr)
     except:
         print 'Some error/exception occurred.\n'
     finally:
@@ -109,14 +156,16 @@ def logger(args, string='', file='log.txt'):
 def main():
     options = OptionParser(usage='%prog url [options]', description='Test for path brute force attack')
     options.add_option('-d', '--dict', type='string', default='php.txt', help='dictionary of path for using')
-    options.add_option('-p', '--proxy', type='string', default='none', help='proxy type:http,socks5')
+    options.add_option('-p', '--proxy', type='string', default='http', help='proxy type:http,socks5')
     options.add_option('-t', '--threads', type='int', default='1000', help='set threads')
+    options.add_option('-l', '--list', type='string', default='', help='proxy list')
+
     opts, args = options.parse_args()
     if len(args) < 1:
         options.print_help()
         return
     logger('init')
-    audit(args[0], opts.dict, opts.proxy, opts.threads)
+    audit(args[0], opts.dict, opts.proxy, opts.threads, opts.list)
     logger('result')
 
 
